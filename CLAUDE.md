@@ -10,15 +10,18 @@ You obsessively plan, audit and implement using the totality of your skills and 
 
 **THESE RULES ARE NON-NEGOTIABLE.**
 
-1. **NEVER claim something works without running a test to prove it.** After writing any code, immediately write and run a test. If you cannot test it, say so explicitly.
+1. **Work modularly.** Complete one module at a time. After each module, report what you built and wait for confirmation before proceeding.
 
-2. **Work modularly.** Complete one module at a time. After each module, report what you built, show test results, and wait for confirmation before proceeding.
+2. **Iterate and fix errors yourself.** Do not rely on the user to report errors back to you. Run the code, observe the output, and fix problems before presenting results.
 
-3. **Iterate and fix errors yourself.** Do not rely on the user to report errors back to you. Run the code, observe the output, and fix problems before presenting results.
+3. **Be explicit about unknowns.** If you're uncertain about something, say so. Don't guess.
 
-4. **Be explicit about unknowns.** If you're uncertain about something, say so. Don't guess.
+4. **Use `python3` and `pip3`.** Never use `python` or `pip` directly.
 
-5. **Use `python3` and `pip3`.** Never use `python` or `pip` directly.
+This project does not use an automated test suite or linting/pre-commit
+checks (a deliberate choice, not an oversight) — see the README's "Status"
+section. Don't add tests, Ruff config, or pre-commit hooks unless the user
+asks for them.
 
 ---
 
@@ -29,7 +32,6 @@ You obsessively plan, audit and implement using the totality of your skills and 
 - Common commands:
   - `uv sync` — install all dependencies from `pyproject.toml`
   - `uv run python script.py` — run a script inside the project environment
-  - `uv run pytest` — run tests
   - `uv add <package>` — add a new dependency
 
 ---
@@ -78,84 +80,13 @@ def count_line(f, line):
 
 ---
 
-## Testing
-
-- **Always read existing tests before writing new ones.**
-- Use `pytest` for all tests. Tests live in `tests/`.
-- Every reasonable function should have at least one test.
-- Run tests with: `uv run pytest`
-- Never claim code works without running the tests and showing passing output.
-
----
-
 ## Plotting Style
 
-**Always apply the project style sheet before creating any plot:**
+This project currently plots with the ALLFED matplotlib style sheet
+(loaded from a URL in `main.py`), not the template's
+`style/scientific.mplstyle`. Keep using the ALLFED style for consistency
+with existing figures unless the user asks to switch.
 
-```python
-import matplotlib.pyplot as plt
-
-plt.style.use("style/scientific.mplstyle")
-```
-
-The style sheet is at `style/scientific.mplstyle`. It must be applied to every plot — no exceptions. Key properties:
-
-- Primary color: `#573280` (deep violet)
-- Figure size: 10 × 4 inches
-- Display DPI: 150 / Save DPI: 300
-- Grid: on, alpha 0.4
-- Color cycle: 15 colors starting with deep violet, burnt orange, cerulean, ...
-
----
-
-## Map Plots
-
-For published maps, use the **Winkel Tripel projection** and the included border file:
-
-```python
-import geopandas as gpd
-import matplotlib.pyplot as plt
-
-plt.style.use("style/scientific.mplstyle")
-
-def plot_winkel_tripel_map(ax):
-    """
-    Adds the Winkel Tripel border and removes axes decorations.
-
-    Arguments:
-        ax (matplotlib.axes.Axes): the axes to modify
-
-    Returns:
-        None
-    """
-    border_geojson = gpd.read_file("data/border.geojson")
-    border_geojson.plot(ax=ax, edgecolor="black", linewidth=0.1, facecolor="none")
-    ax.set_axis_off()
-
-world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-world = world.to_crs("+proj=wintri")
-ax = world.plot()
-plot_winkel_tripel_map(ax)
-plt.show()
-```
-
-The border file is at `data/border.geojson`.
-
-**Important**: Winkel Tripel is for visual display only — it does not preserve area, angle, or distance. Use an appropriate projection for any spatial calculations.
-
----
-
-## Code Formatting & Linting
-
-All code is automatically checked on push via GitHub Actions (lint + test run as separate jobs in `.github/workflows/ci.yml`):
-
-- **Ruff** — formatting, style checks, and import sorting in one tool (replaces Black, Flake8, isort)
-- **pytest** — test suite
-
-Pre-commit hooks also run Ruff locally before each commit. Install them once with:
-
-```bash
-uv run pre-commit install
-```
-
-Fix all linting errors before pushing. Failing checks block merges.
+Published maps (`src/postprocessing/snow_analysis.py`) use cartopy's
+Robinson projection, not the template's Winkel Tripel convention. Don't
+change the map projection unless the user asks for it.
