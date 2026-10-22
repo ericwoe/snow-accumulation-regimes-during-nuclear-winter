@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Snow accumulation regimes during nuclear winter: Code for snow analysis"
+version: 0.1.0
+date-released: "2026-10-22"
+authors:
+  - family-names: "Wöstenberg"
+    given-names: "Eric"
+    orcid: "https://orcid.org/0009-0006-4244-8374"
+license: Apache-2.0
+repository-code: "https://github.com/ericwoe/snow-accumulation-regimes-during-nuclear-winter"
+doi: 10.5281/zenodo.23562900

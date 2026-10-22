@@ -68,6 +68,21 @@ By choice, it does not use an automated test suite, Ruff linting/pre-commit
 hooks, or the template's Winkel Tripel map-plotting convention; plots use
 the ALLFED matplotlib style sheet rather than `style/scientific.mplstyle`.
 
+## Data sources
+
+- CESM model output (control run and 16, 47, 150 Tg soot-injection
+  scenarios): Harrison et al. (2026), openly available via the Open
+  Science Framework at https://doi.org/10.17605/OSF.IO/E28GQ.
+- River basin boundaries: the HydroBASINS dataset (Lehner & Grill, 2013),
+  available at https://www.hydrosheds.org/products/hydrobasins.
+- Land mask: Natural Earth 1:110m physical land polygons
+  (https://www.naturalearthdata.com/downloads/110m-physical-vectors/),
+  public domain.
+
+## Citation
+
+See [`CITATION.cff`](CITATION.cff), or cite directly via the DOI above.
+
 ## License
 
 [Apache 2.0](LICENSE)

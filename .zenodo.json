@@ -1,0 +1,26 @@
+{
+  "title": "Snow accumulation regimes during nuclear winter: Code for snow analysis",
+  "description": "Code to process CESM model output, run a snow accumulation/melt model, and generate figures analyzing snow storage and snowmelt dynamics in major river basins under simulated nuclear winter conditions.",
+  "creators": [
+    {
+      "name": "Wöstenberg, Eric",
+      "orcid": "0009-0006-4244-8374"
+    }
+  ],
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "keywords": [
+    "nuclear winter",
+    "snow accumulation",
+    "snowmelt",
+    "river discharge",
+    "CESM"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.17605/OSF.IO/E28GQ",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    }
+  ]
+}
