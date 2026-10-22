@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# macOS
+.DS_Store
+
+# Raw input data and generated results are large and not synced to git;
+# keep the template's placeholder files tracked.
+/data/*
+!/data/README.md
+!/data/border.geojson
+/results/*
+!/results/README.md

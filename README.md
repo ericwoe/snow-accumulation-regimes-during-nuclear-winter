@@ -1,54 +1,32 @@
-# Scientific-Repository-Template
+# Snow Accumulation Regimes During Nuclear Winter
 
-A template for scientific Python projects. Use this as a starting point by clicking **"Use this template"** in the top right.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 
----
+Analysis of snow storage and snowmelt dynamics in major river basins under
+simulated nuclear winter conditions (16, 47, and 150 Tg soot-injection
+scenarios), based on CESM model output, compared against a control run.
 
-## How to use this template
+The pipeline:
 
-1. Create a new repository from this template.
-2. Update `pyproject.toml` — change the `name`, `description`, and dependencies.
-3. Update `README.md` — describe your specific project.
-4. Set up your environment: `uv sync`
-5. Start coding in `src/`, write tests in `tests/`, and put notebooks in `notebooks/`.
+1. **Preprocessing** — downloads the raw CESM model output, derives
+   precipitation and temperature variables, and builds a land mask.
+2. **Snow model** — runs a snow accumulation/melt model on each scenario.
+3. **Clustering** — DTW k-means clustering of grid-cell snow storage time
+   series, used to exclude permanently snow/ice-covered cells (e.g.
+   Antarctica, Greenland) from the anomaly analyses.
+4. **Global snow analysis** — control-vs-scenario comparisons of snow
+   storage (summary plots, spatial anomaly maps, Hovmoeller diagrams).
+5. **Basin analysis** — downloads HydroBasins catchment shapefiles for six
+   major river basins (Rhine, Ganges-Brahmaputra-Meghna, Yellow River,
+   Tigris-Euphrates, Ob, Mississippi) and converts snowmelt and rain to
+   discharge, producing annual-anomaly, monthly, and seasonal-cycle figures.
 
----
+See the module docstring at the top of `main.py` for more detail on each
+step.
 
-## Python Style Guide
+## Installation
 
-All code should follow the [PEP 8 Style Guide](https://peps.python.org/pep-0008/). Key rules:
-
-- **Document every function** with a docstring in this format:
-
-```python
-def count_line(f, line):
-    """
-    Counts the number of times a line occurs. Case-sensitive.
-
-    Arguments:
-        f (file): the file to scan
-        line (str): the line to count
-
-    Returns:
-        int: the number of times the line occurs.
-    """
-```
-
-- **Write decoupled code**: functions do exactly one thing and are as short as possible. See [here](https://goodresearch.dev/decoupled.html).
-- **Naming conventions**:
-  - `snake_case` for variables, functions, and modules
-  - `CamelCase` for class names
-  - `Camel Case With Spaces.ipynb` for Jupyter notebooks
-- **Delete dead code.** Do not comment out unused code — use git to find it again.
-- **Most code lives in `.py` files.** Notebooks (in `notebooks/`) are for final visualizations and explanations only.
-
-Code is automatically checked with [Ruff](https://docs.astral.sh/ruff/) (formatting, linting, and import sorting) on every push via GitHub Actions. If linting fails, merges are blocked. Pre-commit hooks run Ruff locally before each commit — install with `uv run pre-commit install`.
-
----
-
-## Environment Management
-
-Every project uses its own virtual environment managed by **[UV](https://docs.astral.sh/uv/)**.
+Dependencies are managed with [UV](https://docs.astral.sh/uv/).
 
 ```bash
 # Install UV
@@ -56,124 +34,46 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Set up the project environment
 uv sync
-
-# Run code
-uv run python src/my_module.py
-
-# Run tests
-uv run pytest
-
-# Add a dependency
-uv add pandas
 ```
 
-All dependencies are defined in `pyproject.toml`. The `.python-version` file pins the Python version.
-
-Do **not** use conda, mamba, or bare pip for this project.
-
----
-
-## Testing
-
-Use [pytest](https://docs.pytest.org/) for all tests. Every reasonable function should have a test. Tests live in `tests/` and are automatically run on every push.
+## Running the pipeline
 
 ```bash
-uv run pytest
+uv run python main.py
 ```
 
-See `tests/test_function_to_test.py` for an example. Add a testing badge to your repository README by changing the URL:
+This downloads the required CESM model output, HydroBasins shapefiles, and
+a Natural Earth land-polygon shapefile on first run (several GB), then
+writes all intermediate datasets and figures under `results/`. Expensive
+steps (the snow model, DTW clustering) are cached, so subsequent runs skip
+recomputation where cached output already exists.
 
-![Testing](https://github.com/your-org/your-repo/actions/workflows/testing.yml/badge.svg)
+## Code organization
 
----
+- `main.py` — top-level pipeline script; run this to reproduce all figures.
+- `src/preprocessing/` — downloading and preprocessing raw model output.
+- `src/processing/` — the snow model and time-series clustering.
+- `src/postprocessing/` — plotting and basin-level discharge analysis.
+- `src/utilities.py` — shared helpers (masking, grid-cell area, time
+  handling).
+- `tests/` — pytest test suite.
+- `data/`, `results/` — inputs and outputs (gitignored; downloaded/
+  generated by `main.py`).
 
-## Plotting Style
+## Status
 
-All plots use the project style sheet located at `style/scientific.mplstyle`:
-
-```python
-import matplotlib.pyplot as plt
-
-plt.style.use("style/scientific.mplstyle")
-```
-
-Key properties: primary color `#573280`, figure size 10×4, display DPI 150, save DPI 300.
-
----
-
-## Map Plots
-
-For published maps, use the **Winkel Tripel projection** and the included border file at `data/border.geojson`:
-
-```python
-import geopandas as gpd
-import matplotlib.pyplot as plt
-
-plt.style.use("style/scientific.mplstyle")
-
-def plot_winkel_tripel_map(ax):
-    border_geojson = gpd.read_file("data/border.geojson")
-    border_geojson.plot(ax=ax, edgecolor="black", linewidth=0.1, facecolor="none")
-    ax.set_axis_off()
-
-world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-world = world.to_crs("+proj=wintri")
-ax = world.plot()
-plot_winkel_tripel_map(ax)
-plt.show()
-```
-
-**Note**: Winkel Tripel is for visual display only — use an appropriate projection for spatial calculations.
-
----
-
-## Documentation
-
-- Every repository needs a `README.md` that explains:
-  - What the repository is for
-  - Installation instructions
-  - How the code is organized
-  - Links to papers (if applicable)
-  - License
-- Consider adding a tutorial notebook in `notebooks/` to demonstrate usage.
-
----
-
-## Making the Repository Citable
-
-Use [Zenodo](https://zenodo.org/) to create a DOI for your repository. Once activated, add a DOI badge to your README:
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
-
----
-
-## Project Structure
-
-```
-├── data/               # Raw input data (usually not synced to git for large files)
-│   └── border.geojson  # Winkel Tripel map border
-├── docs/               # Documentation files
-├── notebooks/          # Jupyter notebooks for visualization and explanation
-├── results/            # Output files: figures, tables, checkpoints (large files gitignored)
-├── src/                # Reusable Python modules (imported by notebooks and scripts)
-├── style/
-│   └── scientific.mplstyle  # Matplotlib style sheet
-├── tests/              # pytest test suite
-├── .python-version     # Python version for UV
-├── pyproject.toml      # Project metadata and dependencies
-└── CLAUDE.md           # Rules for AI coding assistants
-```
-
----
+This repository is set up from the
+[Scientific-Repository-Template](https://github.com/florianjehn/Scientific-Repository-Template).
+Test coverage is currently limited to `tests/test_snow_model.py`; the CI
+lint/test workflow in `.github/workflows/ci.yml` and the pre-commit hooks
+are present but not yet fully satisfied by the existing code, and plots
+currently use the ALLFED matplotlib style sheet rather than
+`style/scientific.mplstyle`.
 
 ## License
 
-[Apache 2.0](LICENSE) — free to use with liability protection.
+[Apache 2.0](LICENSE)
 
----
+## Linked paper
 
-## Further Reading
-
-- [Good Research Code Handbook](https://goodresearch.dev/index.html)
-- [Best Practices for Scientific Computing](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1001745)
-- [UV Documentation](https://docs.astral.sh/uv/)
+TBD.
