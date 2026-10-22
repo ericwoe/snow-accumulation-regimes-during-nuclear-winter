@@ -238,9 +238,11 @@ PHASE_COLORS = ["#07285a", "#4575b4", "#abd9e9"]
 
 def seasonal_cycle_by_phase(da, phases=PHASES):
     # Mittlerer Jahresgang je Phase; Jahr 0 = erstes Jahr der Zeitreihe.
-    # Hinweis: PHASES-Grenzen sind aktuell 1-indiziert (z.B. "Years 1-4" = (1, 4)),
-    # rel_year hier aber 0-indiziert -> das erste Analysejahr (rel_year 0) faellt
-    # aus allen Phasen heraus. Noch nicht korrigiert, siehe Ruecksprache.
+    # PHASES-Grenzen sind 1-indiziert (z.B. "Years 1-4" = (1, 4)), rel_year
+    # hier aber 0-indiziert -> das erste Analysejahr (rel_year 0) faellt
+    # absichtlich aus allen Phasen heraus: die Rußinjektion erfolgt erst im
+    # Mai, sodass dieses Jahr Monate vor und nach der Injektion mischt und
+    # den Mittelwert jeder Phase verfaelschen wuerde.
     # Die Zeitverschiebung passiert bereits einmalig via change_time() in main.py,
     # bevor diese Funktion ihre Eingabedaten erhaelt - hier also nicht nochmal verschieben.
     rel_year = da["time.year"] - da["time.year"].min()
