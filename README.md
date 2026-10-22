@@ -1,7 +1,7 @@
 # Snow Accumulation Regimes During Nuclear Winter
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
-<!-- DOI badge is a placeholder until a Zenodo DOI is minted for a release of this repo -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23562900.svg)](https://doi.org/10.5281/zenodo.23562900)
+<!-- Concept DOI: resolves to the latest Zenodo-archived release of this repo -->
 
 Analysis of snow storage and snowmelt dynamics in major river basins under
 simulated nuclear winter conditions (16, 47, and 150 Tg soot-injection
