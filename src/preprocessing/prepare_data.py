@@ -1,5 +1,6 @@
-import xarray as xr
 from pathlib import Path
+
+import xarray as xr
 
 
 def load_climate_files(data_dir, pattern) -> xr.Dataset:

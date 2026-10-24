@@ -1,10 +1,8 @@
-import sys
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import MaxNLocator
 
 
 def convert_mm_month_to_discharge_m3_month(da, river_mask, cell_area):
@@ -15,53 +13,6 @@ def convert_mm_month_to_discharge_m3_month(da, river_mask, cell_area):
 def monthly_discharge_sum_m3(da):
     total_volume_monthly = da.sum(dim=["lat", "lon"])
     return total_volume_monthly
-
-
-def plot_annual_sums_two_bars(
-    scenario, control, river, labels=["Scenario", "Control"], ax=None
-):
-    n_years = len(scenario)
-    year_indices = np.arange(n_years)
-
-    bar_width = 0.4
-    offset = bar_width / 2
-
-    if ax is None:
-        _, ax = plt.subplots(figsize=(8, 5))
-        standalone = True
-    else:
-        standalone = False
-
-    control_mean = control.mean(dim="year")
-
-    ax.bar(
-        year_indices - offset,
-        scenario.values,
-        width=bar_width,
-        color="steelblue",
-        alpha=0.8,
-        label=labels[0],
-    )
-    ax.bar(
-        year_indices + offset,
-        control_mean.values,
-        width=bar_width,
-        color="grey",
-        alpha=0.85,
-        label=labels[1],
-    )
-
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set_xticks(year_indices)
-    ax.set_xticklabels(year_indices, fontsize=5)
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Annual Snowmelt [m³]")
-    ax.legend(fontsize=8)
-    ax.set_title(f"{river}")
-
-    if standalone:
-        plt.tight_layout()
-        plt.show()
 
 
 def plot_annual_anomaly(
@@ -120,7 +71,7 @@ def plot_annual_anomaly(
     ax.set_xticks(year_indices)
     ax.set_xticklabels(year_indices, fontsize=5)
     ax.set_xlabel("Time [years]")
-    ax.set_ylabel(f"{title} Anomaly (%)")
+    ax.set_ylabel(f"{title} Anomaly [%]")
     ax.set_title(f"{river}")
 
     if standalone:
@@ -224,9 +175,6 @@ def plot_monthly_bars_rain_snow(
         )
         plt.close()
 
-
-# Ergänzung für das basin_analysis-Modul: Imports (os, numpy, cftime,
-# matplotlib.pyplot) sind dort bereits vorhanden.
 
 PHASES = [
     ("Years 1–4", 1, 4),
@@ -343,8 +291,7 @@ def plot_seasonal_cycle_phases(
         if show_component_titles:
             ax.set_title(label, fontsize=10, fontweight="bold")
         if show_component_ylabels:
-            ax.set_ylabel(f"{label} discharge (10³ m³ s⁻¹)", fontsize=9)
-
+            ax.set_ylabel(f"{label} discharge [10³ m³ s⁻¹]", fontsize=9)
     if show_river_title:
         axes[0].set_title(river, fontsize=10)
 

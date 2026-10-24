@@ -1,11 +1,12 @@
-import xarray as xr
-import numpy as np
-from tslearn.clustering import TimeSeriesKMeans
-from tslearn.preprocessing import TimeSeriesScalerMinMax
-from datetime import datetime
 import os
 import pickle
+from datetime import datetime
+
+import numpy as np
 import pandas as pd
+import xarray as xr
+from tslearn.clustering import TimeSeriesKMeans
+from tslearn.preprocessing import TimeSeriesScalerMinMax
 
 
 def prepare_time_series(da: xr.DataArray) -> np.ndarray:
@@ -46,7 +47,7 @@ def time_series_analysis(timeseries_object: np.ndarray, n_clusters: int):
     https://www.kaggle.com/code/izzettunc/introduction-to-time-series-clustering/notebook
 
     Arguments:
-        da: xarray.DataArray, shape (time, lat, lon)
+        timeseries_object: np.ndarray, shape (n_land_cells, time_steps, 1)
         n_clusters: int - the number of clusters to use
 
     Returns:
@@ -113,15 +114,22 @@ def elbow_method(timeseries, max_clusters, save_dir):
         print(f"{begin.strftime('%H:%M:%S')} - Trying {i} clusters")
         print(f"{'='*60}")
 
-        # Train model
+        # Train model. This is a diagnostic to compare inertia across k, not
+        # the final clustering, so convergence can be loose: fewer outer
+        # iterations, a looser tolerance, and fewer DTW barycenter-averaging
+        # iterations per step (the usual bottleneck) all speed this up
+        # without changing the overall elbow shape.
         km = TimeSeriesKMeans(
             n_clusters=i,
             metric="dtw",
             n_jobs=-1,
-            max_iter=50,
+            max_iter=10,
+            max_iter_barycenter=10,
+            tol=1e-2,
             random_state=42,
             verbose=1,
         )
+
         labels = km.fit_predict(timeseries_scaled)
 
         # Save inertia
@@ -152,23 +160,3 @@ def elbow_method(timeseries, max_clusters, save_dir):
     print(f"{'='*60}")
 
     return inertias_df
-
-
-if __name__ == "__main__":
-    ds_47 = xr.open_dataset("./results/47/snow_47.nc")
-    ds_control = xr.open_dataset("./results/Control/snow_control.nc")
-
-    da = ds_control.snow_storage
-    timeseries = prepare_time_series(da)
-    print(f"Shape of Timeseries: {timeseries.shape}")
-    # Subset
-    subset_size = int(0.3 * timeseries.shape[0])
-    indices = np.random.choice(timeseries.shape[0], subset_size, replace=False)
-    timeseries_subset = timeseries[indices]
-    print(f"Shape of Subset: {timeseries_subset.shape}")
-
-    elbow_method(
-        timeseries_subset,
-        max_clusters=10,
-        save_dir="./results/Control/clustering/elbow_silhouette",
-    )

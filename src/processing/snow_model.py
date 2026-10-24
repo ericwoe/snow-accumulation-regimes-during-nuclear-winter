@@ -1,13 +1,12 @@
 import numpy as np
-from numba import njit
-from typing import Tuple
 import xarray as xr
+from numba import njit
 
 
 @njit(parallel=False)
 def snow_model(
     precip: np.ndarray, t_mean: np.ndarray, days: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Degree-day snow model following Massmann (2019) "Modelling snow in ungauged catchments".
 

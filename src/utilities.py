@@ -1,6 +1,9 @@
+import cartopy.crs as ccrs
 import cftime
 import numpy as np
 import xarray as xr
+from cartopy.mpl.gridliner import LATITUDE_FORMATTER
+from matplotlib.transforms import offset_copy
 from shapely.geometry import box
 
 
@@ -26,7 +29,6 @@ def create_mask(da, shape):
 
     for i, lat in enumerate(da.lat.values):
         for j, lon in enumerate(da.lon.values):
-
             # Convert 0–360 longitude to -180–180 to match the shapefile CRS
             lon_centered = lon if lon <= 180 else lon - 360
 
@@ -134,3 +136,46 @@ def change_time(ds):
         for t in ds.time.values
     ]
     ds.coords["time"] = new_time
+
+
+def add_lat_lon_gridlines(ax, linewidth, fontsize, latitudes=(-60, -30, 0, 30, 60)):
+    """
+    Draw latitude/longitude gridlines labelled on the left and bottom edge only,
+    as required by the AGU figure guidelines.
+
+    Cartopy labels gridlines that meet the curved side of a Robinson map as "geo"
+    labels on both sides, so the latitude labels are placed manually at the left edge.
+
+    Arguments:
+        ax:        cartopy GeoAxes in Robinson projection
+        linewidth: float - gridline width [pt]
+        fontsize:  float - label font size [pt]
+        latitudes: tuple of float - latitudes of the gridlines and labels [°]
+    """
+    gl = ax.gridlines(
+        draw_labels={"bottom": "x"},
+        ylocs=latitudes,
+        linewidth=linewidth,
+        color="grey",
+        alpha=0.5,
+        linestyle="--",
+    )
+    # Draw above ocean (10) and coastlines/borders (11) so lines also show over the ocean.
+    # The Gridliner is its own artist, so its zorder (not the lines') sets the draw order.
+    gl.set_zorder(12)
+    gl.xlabel_style = {"size": fontsize}
+
+    # Anchor at lon=-180 (left map edge) and shift a few points further left
+    left_edge = offset_copy(
+        ccrs.PlateCarree()._as_mpl_transform(ax), fig=ax.figure, x=-4, units="points"
+    )
+    for lat in latitudes:
+        ax.text(
+            -180,
+            lat,
+            LATITUDE_FORMATTER(lat),
+            transform=left_edge,
+            ha="right",
+            va="center",
+            size=fontsize,
+        )

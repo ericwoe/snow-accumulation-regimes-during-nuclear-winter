@@ -1,14 +1,19 @@
-import xarray as xr
-import numpy as np
-import matplotlib.pyplot as plt
-import cftime
 import os
-from matplotlib.ticker import MultipleLocator
-from matplotlib.colors import SymLogNorm
-from matplotlib.ticker import FixedLocator
-from cartopy import crs as ccrs
+
 import cartopy.feature as cfeature
-from src.utilities import compute_grid_cell_area, change_time
+import cftime
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from cartopy import crs as ccrs
+from matplotlib.colors import SymLogNorm
+from matplotlib.ticker import FixedLocator, MultipleLocator
+
+from src.utilities import (
+    add_lat_lon_gridlines,
+    change_time,
+    compute_grid_cell_area,
+)
 
 DEFAULT_SCENARIO_COLORS = ["#abd9e9", "#74add1", "#4575b4"]
 SOOT_INJECTION_MONTH = 4
@@ -54,10 +59,10 @@ def plot_combined_snow_analysis(
         Grid cell area [m2] with dimensions ("lat", "lon"), e.g. as returned
         by `compute_grid_cell_area`.
     mask : xr.DataArray
-    Land fraction with dimensions ("lat", "lon"), ranging continuously
-    from 0 (fully ocean) to 1 (fully land), used together with
-    `cell_area` to weight the spatial average by the land area within
-    each grid cell.
+        Land fraction with dimensions ("lat", "lon"), ranging continuously
+        from 0 (fully ocean) to 1 (fully land), used together with
+        `cell_area` to weight the spatial average by the land area within
+        each grid cell.
     variable : str
         Name of the variable in `datasets` and `control` to analyze (e.g.,
         "snow_storage").
@@ -86,8 +91,10 @@ def plot_combined_snow_analysis(
 
     fig, axes = plt.subplots(3, 1, figsize=(12, 14), sharex=True)
 
-    # Combined area x land-mask weights used for all spatial averages below
-    weights = cell_area * mask
+    # Combined area x land-mask weights used for all spatial averages below.
+    # Restricted to cells with data (e.g. excluding cluster 0), so means and
+    # snow cover fractions refer only to the analysed area, not all land.
+    weights = (cell_area * mask).where(control[variable].isel(time=0).notnull())
 
     # --- Control run climatology ---
 
@@ -123,7 +130,7 @@ def plot_combined_snow_analysis(
         )
         # Plot the mean snow storage for the scenario
         axes[0].plot(
-            month_index, mean_snow_scenario.values, label=f"{label} Tg BC", color=color
+            month_index, mean_snow_scenario.values, label=f"{label} Tg", color=color
         )
 
         # (b) Anomaly relative to the control's climatology for the same
@@ -131,9 +138,7 @@ def plot_combined_snow_analysis(
         anomaly_mean = (
             mean_snow_scenario.groupby("time.month") - mean_snow_control_monthly
         ).sortby("time")
-        axes[1].plot(
-            month_index, anomaly_mean.values, label=f"{label} Tg BC", color=color
-        )
+        axes[1].plot(month_index, anomaly_mean.values, label=f"{label} Tg", color=color)
 
         # (c) Snow cover extent anomaly relative to the control's
         # climatology mean for the same calendar month
@@ -147,7 +152,7 @@ def plot_combined_snow_analysis(
         ).sortby("time")
         # Plot the snow cover extent anomaly for the scenario
         axes[2].plot(
-            month_index, percentage_anomaly.values, label=f"{label} Tg BC", color=color
+            month_index, percentage_anomaly.values, label=f"{label} Tg", color=color
         )
 
     # Add Control run reference lines and ±1σ shading for each panel
@@ -177,9 +182,6 @@ def plot_combined_snow_analysis(
         label="±1σ Control",
     )
 
-    std_expanded_cover = std_snow_cover_control_monthly.sel(
-        month=anomaly_mean.time.dt.month
-    ).values
     axes[2].fill_between(
         month_index,
         -std_expanded_cover,
@@ -220,7 +222,7 @@ def plot_combined_snow_analysis(
         SOOT_INJECTION_MONTH, color="black", linewidth=0.5, linestyle="dashed"
     )
 
-    axes[2].set_ylabel("Snow Cover Extent Anomaly [%-points]", fontsize=12)
+    axes[2].set_ylabel("Snow Cover Extent Anomaly [pp]", fontsize=12)
     axes[2].axhline(0, color="#E34444", linewidth=1.2, linestyle="--")
     # Add vertical dashed line marking the month of soot injection (May of Year 0)
     axes[2].axvline(
@@ -293,7 +295,9 @@ def find_mean_anomaly_peak_time(
     spatial domain of interest (e.g., a specific cluster), since this
     function does not perform any cluster filtering itself.
     """
-    weights = cell_area * mask
+    # Restricted to cells with data (e.g. excluding cluster 0), as in
+    # plot_combined_snow_analysis
+    weights = (cell_area * mask).where(control[variable].isel(time=0).notnull())
 
     mean_snow_control = (control[variable] * weights).sum(
         dim=["lat", "lon"]
@@ -319,7 +323,7 @@ def plot_snow_anomaly_spatial(
     time_point: cftime,
     scenario_name: str,
     variable: str = "snow_storage",
-    output_path: str = "./results/intercomparison/spatial_snow_anomaly.png",
+    output_path: str = "./results/intercomparison/timepoint_max_snow_anomaly_spatial.png",
     vmin: float = -5,
     vmax: float = 5,
     linthresh: float = 0.1,
@@ -360,6 +364,8 @@ def plot_snow_anomaly_spatial(
     ax.add_feature(cfeature.OCEAN, color="lightgrey", zorder=10)
     ax.coastlines(linewidth=0.5, zorder=11)
     ax.add_feature(cfeature.BORDERS, linewidth=0.3, zorder=11)
+
+    add_lat_lon_gridlines(ax, linewidth=0.8, fontsize=10)
 
     im = anomaly.plot(
         ax=ax,
@@ -412,9 +418,6 @@ def plot_hovmoeller_mean_snow_storage(
     (Szenario - Control, zeitlich 1:1 gleicher Index) für mehrere Szenarien
     in einem Multi-Panel-Plot.
     """
-    from matplotlib.colors import SymLogNorm
-    from matplotlib.ticker import FixedLocator
-
     os.makedirs(savedir, exist_ok=True)
     n = len(datasets)
 
@@ -457,6 +460,9 @@ def plot_hovmoeller_mean_snow_storage(
     )
     if n == 1:
         axes = [axes]
+    # Reserve headroom so the top panel's label doesn't get clipped at the
+    # figure edge; constrained_layout doesn't account for it otherwise.
+    fig.get_layout_engine().set(rect=(0, 0, 1, 0.96))
 
     norm = SymLogNorm(linthresh=linthresh, vmin=vmin, vmax=vmax)
     cmap = plt.get_cmap("RdBu")
@@ -484,6 +490,22 @@ def plot_hovmoeller_mean_snow_storage(
         label = titles[i] if titles and i < len(titles) else ds.case
         ax.set_title(f"{label} Tg", fontsize=11)
 
+        # Offset above the axes far enough to clear the title set above,
+        # anchored at a fixed point distance rather than a fractional
+        # y-position so it can't collide with a tick label at the top edge.
+        ax.annotate(
+            f"{chr(97 + i)})",
+            xy=(0, 1),
+            xycoords="axes fraction",
+            xytext=(0, 14),
+            textcoords="offset points",
+            ha="right",
+            va="bottom",
+            fontsize=12,
+            weight="bold",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.7),
+        )
+
         ax.set_xticks(tick_positions)
         ax.set_xticklabels(tick_labels)
         ax.tick_params(axis="x", direction="out", length=4, width=0.8, bottom=True)
@@ -509,7 +531,7 @@ def plot_hovmoeller_mean_snow_storage(
     cbar.set_ticklabels([f"{t:g}" for t in ticks])
 
     fig.savefig(
-        os.path.join(savedir, "mean_snow_storage_anomaly.png"),
+        os.path.join(savedir, "hovmoeller_mean_snow_storage_anomaly.png"),
         dpi=600,
         bbox_inches="tight",
     )
@@ -524,13 +546,6 @@ if __name__ == "__main__":
     mask = xr.open_dataarray("./data/interim/land_mask_neu.nc")
 
     cell_area = compute_grid_cell_area(ds_ctrl.snow_storage.isel(time=0))
-
-    # Default colors used for the three soot injection scenarios when no custom
-    # color list is provided
-    DEFAULT_SCENARIO_COLORS = ["#abd9e9", "#74add1", "#4575b4"]
-
-    # Month (0-indexed) at which the soot injection occurs (May of Year 0)
-    SOOT_INJECTION_MONTH = 4
 
     # Change the time coordinate of each dataset to align with the intended month labeling
     for ds in [ds_16, ds_47, ds_150, ds_ctrl]:
@@ -576,7 +591,7 @@ if __name__ == "__main__":
         time_point=time_mean_peak,
         scenario_name="47 Tg",
         variable="snow_storage",
-        output_path="./results/intercomparison/spatial_snow_anomaly.png",
+        output_path="./results/intercomparison/timepoint_max_snow_anomaly_spatial.png",
         vmin=-5,
         vmax=5,
         linthresh=0.1,
@@ -595,13 +610,3 @@ if __name__ == "__main__":
         vmax=5,
         linthresh=0.1,
     )
-
-    """plot_monthly_snow_anomaly(
-        ds_47,
-        ds_ctrl,
-        "47 Tg",
-        variable="snow_storage",
-        output_dir="./results/intercomparison/spatial_anomalies",
-        vmin=-5,
-        vmax=5,
-    )"""

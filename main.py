@@ -31,32 +31,13 @@ All figures and intermediate datasets are written under ``results/``.
 
 import pickle
 from pathlib import Path
+
 import cftime
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from src.preprocessing import prepare_data
-from src.preprocessing.download_data import download_model_output, load_basin_region
-from src.utilities import create_mask, compute_grid_cell_area, change_time
-from src.processing.snow_model import add_snow_variables
-from src.processing.clustering import (
-    prepare_time_series,
-    time_series_analysis,
-    elbow_method,
-)
-from src.postprocessing.snow_analysis import (
-    plot_combined_snow_analysis,
-    find_mean_anomaly_peak_time,
-    plot_snow_anomaly_spatial,
-    plot_hovmoeller_mean_snow_storage,
-    DEFAULT_SCENARIO_COLORS,
-)
-from src.postprocessing.plot_clustering import (
-    plot_cluster_combined,
-    plot_elbow,
-)
 from src.postprocessing.basin_analysis import (
     convert_mm_month_to_discharge_m3_month,
     monthly_discharge_sum_m3,
@@ -64,6 +45,26 @@ from src.postprocessing.basin_analysis import (
     plot_monthly_bars_rain_snow,
     plot_seasonal_cycle_phases,
 )
+from src.postprocessing.plot_clustering import (
+    plot_cluster_combined,
+    plot_elbow,
+)
+from src.postprocessing.snow_analysis import (
+    DEFAULT_SCENARIO_COLORS,
+    find_mean_anomaly_peak_time,
+    plot_combined_snow_analysis,
+    plot_hovmoeller_mean_snow_storage,
+    plot_snow_anomaly_spatial,
+)
+from src.preprocessing import prepare_data
+from src.preprocessing.download_data import download_model_output, load_basin_region
+from src.processing.clustering import (
+    elbow_method,
+    prepare_time_series,
+    time_series_analysis,
+)
+from src.processing.snow_model import add_snow_variables
+from src.utilities import change_time, compute_grid_cell_area, create_mask
 
 plt.style.use(
     "https://raw.githubusercontent.com/allfed/ALLFED-matplotlib-style-sheet/main/ALLFED.mplstyle"
@@ -226,6 +227,28 @@ for name, ds in datasets.items():
     print(f"  {name}: extracting land-cell time series from snow_storage")
     timeseries = prepare_time_series(ds.snow_storage)
     print(f"  {name}: {timeseries.shape[0]} land cells, {timeseries.shape[1]} months")
+
+    # --- Step 1: elbow method, always run ---
+    # Diagnostic (inertia vs. k) to help pick n_clusters by eye; it doesn't
+    # feed back into n_clusters above. Runs on a cheaper random 30% subset
+    # of the land cells rather than the full grid. elbow_method() itself
+    # checkpoints per k in save_dir, so re-running here is cheap once all
+    # k values are cached - it just reloads them.
+    subset_size = int(0.3 * timeseries.shape[0])
+    rng = np.random.default_rng(seed=42)
+    indices = rng.choice(timeseries.shape[0], subset_size, replace=False)
+    timeseries_subset = timeseries[indices]
+    print(
+        f"  {name}: running elbow method (k=2..10) on a {subset_size}-cell "
+        "subset for the diagnostic plot"
+    )
+    inertias_df = elbow_method(
+        timeseries_subset, max_clusters=10, save_dir=clustering_dir / "elbow"
+    )
+    plot_elbow(inertias_df, save_dir=clustering_dir / "elbow")
+    print(f"  {name}: elbow plot saved to {clustering_dir / 'elbow'}")
+
+    # --- Step 2: full clustering at the chosen n_clusters, cached ---
     # DTW k-means on the full grid is expensive (minutes to hours), so skip
     # it if a previous run already produced and saved this scenario's labels.
     if labels_path.exists():
@@ -234,32 +257,9 @@ for name, ds in datasets.items():
         )
         labels = np.load(labels_path)
     else:
-        # The elbow method (inertia vs. k) is a diagnostic to help pick
-        # n_clusters by eye; it doesn't feed back into n_clusters above, so
-        # it's run on a cheaper random 30% subset of the land cells rather
-        # than the full grid.
-        subset_size = int(0.3 * timeseries.shape[0])
-        rng = np.random.default_rng(seed=42)
-        indices = rng.choice(timeseries.shape[0], subset_size, replace=False)
-        timeseries_subset = timeseries[indices]
-        print(
-            f"  {name}: running elbow method (k=2..10) on a {subset_size}-cell "
-            "subset for the diagnostic plot"
-        )
-        # Run Elbow Method to determine optimal number of clusters
-        inertias_df = elbow_method(
-            timeseries_subset, max_clusters=10, save_dir=clustering_dir / "elbow"
-        )
-        # Plot the Elbow Method results for visual inspection
-        plot_elbow(inertias_df, save_dir=clustering_dir / "elbow")
-        print(f"  {name}: elbow plot saved to {clustering_dir / 'elbow'}")
-
-        # This is the expensive step: DTW k-means on every land cell's full
-        # time series (not the subset above), producing one cluster label
-        # per land cell.
         print(
             f"  {name}: no cached result, running full {n_clusters}-cluster DTW "
-            f"k-means on all {timeseries.shape[0]} land cells - this is the slow step"
+            f"k-means on all {timeseries.shape[0]} land cells"
         )
         labels, km = time_series_analysis(timeseries, n_clusters=n_clusters)
 
@@ -273,10 +273,10 @@ for name, ds in datasets.items():
 
     if name == "47":
         # Diagnostic-only figure (spatial cluster map + per-cluster time
-        # series for scenario vs. control) used to visually confirm which
-        # cluster ID is the "permanent snow" one before hardcoding
-        # `cluster_map != 0` in the Global Snow Analysis section below; it
-        # doesn't feed back into the labels themselves.
+        # series for scenario vs. control). Its clusters are renumbered by
+        # ascending mean snow storage, so its IDs do not match the raw Control
+        # labels used for `cluster_map != 0` in the Global Snow Analysis
+        # section below; it doesn't feed back into the labels themselves.
         print(f"  {name}: building scenario-vs-control cluster comparison plot")
         timeseries_control = prepare_time_series(datasets["Control"].snow_storage)
 
@@ -297,9 +297,8 @@ for name, ds in datasets.items():
             labels=labels,
             cell_areas=cell_area_1d,
             fractions=fractions_1d,
-            n_clusters=5,
-            title=None,
-            parameter_name="Snow Storage (mm)",
+            n_clusters=n_clusters,
+            parameter_name="Snow Storage [mm]",
             save_path=clustering_dir,
         )
         print(f"  {name}: cluster comparison plot saved to {clustering_dir}")
@@ -375,12 +374,12 @@ plot_snow_anomaly_spatial(
     time_point=time_mean_peak,
     scenario_name="47 Tg",
     variable="snow_storage",
-    output_path=global_analysis_dir / "spatial_snow_anomaly.png",
+    output_path=global_analysis_dir / "timepoint_max_snow_anomaly_spatial.png",
     vmin=-5,
     vmax=5,
     linthresh=0.1,
 )
-print(f"  saved to {global_analysis_dir / 'spatial_snow_anomaly.png'}")
+print(f"  saved to {global_analysis_dir / 'timepoint_max_snow_anomaly_spatial.png'}")
 
 # Hovmoeller diagrams (zonal-mean anomaly vs. time) for all three
 # scenarios against the control run; also uses the full datasets.
@@ -392,14 +391,13 @@ plot_hovmoeller_mean_snow_storage(
     control=ds_control,
     mask=mask,
     cell_area=cell_area,
-    savedir=global_analysis_dir / "hovmoeller",
+    savedir=global_analysis_dir,
     titles=[16, 47, 150],
     vmin=-5,
     vmax=5,
     linthresh=0.1,
 )
-print(f"  saved to {global_analysis_dir / 'hovmoeller'}")
-
+print(f"  saved to {global_analysis_dir / 'hovmoeller_mean_snow_storage_anomaly.png'}")
 
 ##################################################################################################
 # POSTPROCESSING - Basin Analysis

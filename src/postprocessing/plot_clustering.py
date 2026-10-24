@@ -1,20 +1,18 @@
-import sys
+import math
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from src.processing.clustering import prepare_time_series
-import xarray as xr
-import matplotlib.patches as mpatches
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
-import math
-from src.utilities import compute_grid_cell_area
-from matplotlib.ticker import MultipleLocator
 import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
+from matplotlib.ticker import MultipleLocator
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from src.utilities import add_lat_lon_gridlines
 
 
 def plot_elbow(
@@ -38,12 +36,10 @@ def plot_elbow(
     ax_elbow.plot(inertias_df.index, inertias_df["inertia"], marker="o", color=color)
     ax_elbow.set_xlabel("Number of clusters")
     ax_elbow.set_ylabel("Distortion")
-    ax_elbow.set_title("Elbow method")
+    ax_elbow.set_title("Elbow plot")
 
     plt.tight_layout()
-    plt.savefig(
-        os.path.join(save_dir, "elbow_silhouette.png"), dpi=600, bbox_inches="tight"
-    )
+    plt.savefig(os.path.join(save_dir, "elbow_plot.png"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -87,8 +83,7 @@ def plot_cluster_combined(
     cell_areas: np.ndarray,
     fractions: np.ndarray,
     n_clusters: int = 5,
-    title: str = None,
-    parameter_name: str = "Snow Storage (mm)",
+    parameter_name: str = "Snow Storage [mm]",
     save_path: str = "./results/clustering",
 ):
     """
@@ -105,11 +100,9 @@ def plot_cluster_combined(
         cell_areas:          np.ndarray, shape (n_land_cells,)            - grid cell area per cell
         fractions:           np.ndarray, shape (n_land_cells,)            - land fraction per cell
         n_clusters:          int - number of clusters
-        title:               str - used in the output filename
         parameter_name:      str - label for the y-axis
         save_path:           str - directory where the plot is saved
     """
-    # Sort clusters by ascending mean snow storage
     colors_full = ["#f1eef6", "#abd9e9", "#74add1", "#4575b4", "#542788"]
     color = "#4575b4"
 
@@ -167,7 +160,7 @@ def plot_cluster_combined(
     # Map 1d cluster labels back to the 2d spatial grid using the land mask
     template = da.isel(time=0)
     cluster_map = xr.full_like(template, fill_value=np.nan)
-    land_mask = ~np.isnan(da.isel(time=0))
+    land_mask = ~np.isnan(template)
     cluster_map.values[land_mask.values] = (
         labels_remapped  # map cluster labels to the spatial grid
     )
@@ -185,6 +178,19 @@ def plot_cluster_combined(
     map_ax.coastlines(linewidth=0.5, zorder=11)
     map_ax.add_feature(cfeature.BORDERS, linewidth=0.3, zorder=11)
     map_ax.add_feature(cfeature.OCEAN, color="lightgrey", zorder=10)
+
+    add_lat_lon_gridlines(map_ax, linewidth=1.5, fontsize=20)
+
+    map_ax.text(
+        -0.05,
+        0.95,
+        "a)",
+        transform=map_ax.transAxes,
+        fontsize=12,
+        verticalalignment="bottom",
+        weight="bold",
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.7),
+    )
 
     # Time series panels in remapped cluster order (ascending mean snow storage).
     # labels still holds original cluster indices, so we translate new → old before masking.
@@ -204,7 +210,7 @@ def plot_cluster_combined(
         # q_up_overall tracks the highest upper quantile across all bands and time steps,
         # used afterwards to set a consistent y-axis upper limit.
         q_up_overall = 0
-        for q in np.arange(0.1, 0.6, 0.1):
+        for q in (0.1, 0.2, 0.3, 0.4):
             q_up = weighted_quantile(cluster_ts, cluster_weights, 1 - q)
             q_down = weighted_quantile(cluster_ts, cluster_weights, q)
             q_up_overall = max(q_up_overall, q_up.max())
@@ -218,7 +224,7 @@ def plot_cluster_combined(
         # Set y-limits based on the widest band (Q10–Q90 upper edge) plus a small margin
         y_offset = -0.03 * (q_up_overall + 100)  # 3% of total range as lower margin
         ax.set_ylim(y_offset, q_up_overall + 100)
-        ax.set_ylabel("Snow Storage [mm]")
+        ax.set_ylabel(parameter_name)
 
         median = weighted_quantile(cluster_ts, cluster_weights, 0.5)
         ax.plot(
@@ -256,17 +262,6 @@ def plot_cluster_combined(
         ax.xaxis.set_minor_locator(MultipleLocator(1))
         ax.set_xlabel("Time")
 
-        map_ax.text(
-            -0.05,
-            0.95,
-            "a)",
-            transform=map_ax.transAxes,
-            fontsize=12,
-            verticalalignment="bottom",
-            weight="bold",
-            bbox=dict(boxstyle="round", facecolor="white", alpha=0.7),
-        )
-
         ax.text(
             -0.1,
             1.09,
@@ -292,55 +287,8 @@ def plot_cluster_combined(
             ax.legend(handles=patches_list, loc="best", fontsize=9)
 
     plt.savefig(
-        os.path.join(save_path, f"combined_{n_clusters}_clusters_{title}.png"),
+        os.path.join(save_path, f"combined_{n_clusters}_clusters.png"),
         dpi=600,
         bbox_inches="tight",
     )
     plt.close()
-
-
-if __name__ == "__main__":
-
-    base_path = "./results/clustering"
-
-    ds_47 = xr.open_dataset("./results/47/snow_47.nc")
-    ds_16 = xr.open_dataset("./results/16/snow_16.nc")
-    ds_150 = xr.open_dataset("./results/150/snow_150.nc")
-    ds_ctrl = xr.open_dataset("./results/Control/snow_control.nc")
-
-    datasets = {
-        "47": ds_47,
-        "16": ds_16,
-        "150": ds_150,
-        "Control": ds_ctrl,
-        "all": [ds_ctrl, ds_16, ds_47, ds_150],
-    }
-
-    fraction_mask = xr.open_dataarray("./data/interim/land_mask_neu.nc")
-    # Calculate cell area for weighting
-    cell_area = compute_grid_cell_area(ds_47.snow_storage.isel(time=0))
-    # Create land mask for extracting cell areas of only land cells
-    land_mask = ~np.isnan(ds_47.snow_storage.isel(time=0))
-    cell_area_1d = cell_area.values[land_mask.values]  # shape: (n_land_cells,)
-    fractions_1d = fraction_mask.values[land_mask.values]  # shape: (n_land_cells,)
-
-    timeseries_ctrl = prepare_time_series(ds_ctrl.snow_storage)
-    timeseries_ctrl = timeseries_ctrl.squeeze()
-
-    timeseries_scenario = prepare_time_series(ds_47.snow_storage)
-    timeseries_scenario = timeseries_scenario.squeeze()
-
-    labels = np.load("./results/clustering/47_Tg_dtw/5_cluster_labels.npy")
-
-    plot_cluster_combined(
-        da=ds_47.snow_storage,
-        timeseries_scenario=timeseries_scenario,
-        timeseries_ctrl=timeseries_ctrl,
-        labels=labels,
-        cell_areas=cell_area_1d,
-        fractions=fractions_1d,
-        n_clusters=5,
-        title=None,
-        parameter_name="Snow Storage (mm)",
-        save_path="./results/clustering",
-    )
