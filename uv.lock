@@ -1104,7 +1104,7 @@ wheels = [
 
 [[package]]
 name = "snow-accumulation-regimes-during-nuclear-winter"
-version = "1.0.0"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "cartopy" },

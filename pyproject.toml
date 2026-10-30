@@ -1,6 +1,6 @@
 [project]
 name = "snow-accumulation-regimes-during-nuclear-winter"
-version = "1.0.0"
+version = "1.0.1"
 description = "Snow storage and snowmelt dynamics in major river basins under nuclear winter conditions"
 readme = "README.md"
 requires-python = ">=3.11.9"
