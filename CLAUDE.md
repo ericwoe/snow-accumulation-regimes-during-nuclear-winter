@@ -59,7 +59,6 @@ def count_line(f, line):
 |---|---|---|
 | Variables, functions, modules | snake_case | `my_variable`, `my_module.py` |
 | Classes | CamelCase | `MyClass` |
-| Jupyter notebooks | Camel Case With Spaces | `Analyze Results.ipynb` |
 
 ### Code Quality Rules
 
@@ -71,7 +70,6 @@ def count_line(f, line):
 ### Code Organization
 
 - All reusable logic goes in `.py` files under `src/`.
-- Jupyter notebooks (in `notebooks/`) are for final visualizations and explanations only — not for implementing logic.
 
 ---
 
