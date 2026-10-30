@@ -27,14 +27,16 @@ step.
 
 ## Installation
 
-Dependencies are managed with [UV](https://docs.astral.sh/uv/).
+Dependencies are managed with [UV](https://docs.astral.sh/uv/). The
+committed `uv.lock` pins the exact package versions used to produce the
+figures in `results/`.
 
 ```bash
 # Install UV
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Set up the project environment
-uv sync
+# Set up the project environment with the locked versions
+uv sync --locked
 ```
 
 ## Running the pipeline
