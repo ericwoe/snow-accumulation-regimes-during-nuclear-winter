@@ -543,7 +543,7 @@ if __name__ == "__main__":
     ds_47 = xr.open_dataset("./results/47/snow_model_output_47Tg.nc")
     ds_150 = xr.open_dataset("./results/150/snow_model_output_150Tg.nc")
     ds_ctrl = xr.open_dataset("./results/Control/snow_model_output_control.nc")
-    mask = xr.open_dataarray("./data/interim/land_mask_neu.nc")
+    mask = xr.open_dataarray("./data/land_fraction_mask/land_mask_neu.nc")
 
     cell_area = compute_grid_cell_area(ds_ctrl.snow_storage.isel(time=0))
 

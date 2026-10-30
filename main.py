@@ -72,28 +72,28 @@ plt.style.use(
 
 SCENARIOS = {
     "Control": {
-        "data_dir": "./data/Model_Output_From_Harrison/Temp_Precip/nw_cntrl_03",
+        "data_dir": "./data/cesm_output_from_harrison/temp_precip/nw_cntrl_03",
         "pattern": "*.nc",
         "result_path": "./results/Control/snow_model_output_control.nc",
         "osf_url": "https://osf.io/download/w6qb5/",
         "osf_archive": "nw_cntrl_03.TS_TSMN_TSMX_PRECC_PRECL_v2024-12-12.nc.tar.gz",
     },
     "16": {
-        "data_dir": "./data/Model_Output_From_Harrison/Temp_Precip/nw_targets_04",
+        "data_dir": "./data/cesm_output_from_harrison/temp_precip/nw_targets_04",
         "pattern": "*.nc",
         "result_path": "./results/16/snow_model_output_16Tg.nc",
         "osf_url": "https://osf.io/download/n2vtj/",
         "osf_archive": "nw_targets_04.TS_TSMN_TSMX_PRECC_PRECL_v2024-12-12.nc.tar.gz",
     },
     "47": {
-        "data_dir": "./data/Model_Output_From_Harrison/Temp_Precip/nw_targets_05",
+        "data_dir": "./data/cesm_output_from_harrison/temp_precip/nw_targets_05",
         "pattern": "*.nc",
         "result_path": "./results/47/snow_model_output_47Tg.nc",
         "osf_url": "https://osf.io/download/4uysj/",
         "osf_archive": "nw_targets_05.TS_TSMN_TSMX_PRECC_PRECL_v2024-12-12.nc.tar.gz",
     },
     "150": {
-        "data_dir": "./data/Model_Output_From_Harrison/Temp_Precip/nw_ur_150_07",
+        "data_dir": "./data/cesm_output_from_harrison/temp_precip/nw_ur_150_07",
         "pattern": "*.nc",
         "result_path": "./results/150/snow_model_output_150Tg.nc",
         "osf_url": "https://osf.io/download/wnvxf/",
@@ -106,7 +106,7 @@ RESULT_DIRS = {
 }
 
 LAND_SHAPE_URL = "https://naciscdn.org/naturalearth/110m/physical/ne_110m_land.zip"
-LAND_MASK_FILE_PATH = "./data/interim/land_mask_neu.nc"
+LAND_MASK_FILE_PATH = "./data/land_fraction_mask/land_mask_neu.nc"
 # Start/end are deliberately set to month 2 and month 1 (not month 1 for both):
 # change_time() later shifts every timestamp back by one month (raw timestamps
 # mark the end of the averaging period). This offset exactly compensates for
@@ -412,7 +412,7 @@ HYDROBASINS_URLS = {
     "si": f"{_HYDROBASINS_BASE}/hybas_si_lev01-12_v1c.zip",
     "na": f"{_HYDROBASINS_BASE}/hybas_na_lev01-12_v1c.zip",
 }
-HYDROBASINS_CACHE_DIR = Path("./data/HydroBasins/cache")
+HYDROBASINS_DIR = Path("./data/hydrobasins_level4")
 
 MAIN_RIVERS = {
     "Rhine": ("eu", 2040023010),
@@ -455,7 +455,7 @@ for river, (region, river_id) in MAIN_RIVERS.items():
     # level-4 sub-basins that belong to this river's main basin ID.
     if region not in _basin_gdf_cache:
         _basin_gdf_cache[region] = load_basin_region(
-            region, HYDROBASINS_CACHE_DIR, HYDROBASINS_URLS
+            region, HYDROBASINS_DIR, HYDROBASINS_URLS
         )
     basins_lev4 = _basin_gdf_cache[region]
     river_basin = basins_lev4[basins_lev4["MAIN_BAS"] == river_id]
