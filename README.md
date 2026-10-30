@@ -70,9 +70,9 @@ snow model output (`results/<scenario>/snow_model_output_<scenario>.nc`,
 
 This repository is set up from the
 [Scientific-Repository-Template](https://github.com/florianjehn/Scientific-Repository-Template).
-By choice, it does not use an automated test suite, Ruff linting/pre-commit
-hooks, or the template's Winkel Tripel map-plotting convention; plots use
-the ALLFED matplotlib style sheet rather than `style/scientific.mplstyle`.
+Maps use the Robinson projection rather than the template's Winkel Tripel
+convention, and plots use the ALLFED matplotlib style sheet rather than
+`style/scientific.mplstyle`.
 
 ## Data sources
 

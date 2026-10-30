@@ -18,11 +18,6 @@ You obsessively plan, audit and implement using the totality of your skills and 
 
 4. **Use `python3` and `pip3`.** Never use `python` or `pip` directly.
 
-This project does not use an automated test suite or linting/pre-commit
-checks (a deliberate choice, not an oversight) — see the README's "Status"
-section. Don't add tests, Ruff config, or pre-commit hooks unless the user
-asks for them.
-
 ---
 
 ## Environment & Dependency Management
