@@ -66,9 +66,7 @@ from src.processing.clustering import (
 from src.processing.snow_model import add_snow_variables
 from src.utilities import change_time, compute_grid_cell_area, create_mask
 
-plt.style.use(
-    "https://raw.githubusercontent.com/allfed/ALLFED-matplotlib-style-sheet/main/ALLFED.mplstyle"
-)
+plt.style.use("./style/ALLFED.mplstyle")
 
 SCENARIOS = {
     "Control": {

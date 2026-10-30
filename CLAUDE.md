@@ -75,10 +75,9 @@ def count_line(f, line):
 
 ## Plotting Style
 
-This project currently plots with the ALLFED matplotlib style sheet
-(loaded from a URL in `main.py`), not the template's
-`style/scientific.mplstyle`. Keep using the ALLFED style for consistency
-with existing figures unless the user asks to switch.
+This project plots with the ALLFED matplotlib style sheet, stored locally in
+`style/ALLFED.mplstyle` and loaded by `main.py`. Keep using it for
+consistency with existing figures unless the user asks to switch.
 
 Published maps (`src/postprocessing/snow_analysis.py`) use cartopy's
 Robinson projection, not the template's Winkel Tripel convention. Don't

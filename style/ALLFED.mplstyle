@@ -1,0 +1,72 @@
+# ALLFED matplotlib style sheet, copied from
+# https://github.com/allfed/ALLFED-matplotlib-style-sheet/blob/9511ccb19e8c2b10de7c6a45899de59a42a5d512/ALLFED.mplstyle
+# (commit 9511ccb, 2025-01-31) so figures stay reproducible if the original changes.
+
+# To check more avaialble options see:
+# https://matplotlib.org/tutorials/introductory/customizing.html
+
+# BOXPLOT
+boxplot.notch : True
+
+boxplot.meanline : True
+boxplot.flierprops.color:           3A913F
+boxplot.flierprops.markeredgecolor: 3A913F
+boxplot.boxprops.color:     3A913F
+boxplot.whiskerprops.color:     3A913F
+boxplot.capprops.color:     3A913F
+boxplot.medianprops.color:     3A913F
+boxplot.meanprops.color:         3A913F  
+
+
+# FONT
+# font.family  : serif
+
+# TEXT
+text.color : dimgrey
+
+# AXES
+axes.edgecolor : ffffff
+axes.labelcolor : dimgrey
+axes.linewidth : 1
+axes.axisbelow:True
+
+# GRID
+axes.grid : True
+grid.alpha : 0.4
+grid.linestyle : -
+grid.linewidth : 0.5
+
+# LINES
+axes.prop_cycle : cycler('color', [ '3A913F', '6c7075', 'e06234', 'F0B323', '3D87CB', '89b587', '9b9da1', 'ec9c76', 'f6cd85', '85abda', 'd3e1d0', 'd8d8d9', 'f9dbc9', 'fbecd2', 'd3dff1']) #hex colours
+lines.linewidth : 2
+lines.markeredgewidth : 0.0
+
+# SCATTER PLOT
+scatter.marker : .
+
+# TICKS
+xtick.bottom: False
+ytick.left:False
+xtick.color:dimgrey
+ytick.color:dimgrey
+xtick.major.size:0.5
+ytick.major.size:0.5
+xtick.labelcolor:dimgrey
+ytick.labelcolor:dimgrey
+
+# IMAGE
+image.cmap: viridis 
+
+# Legend
+legend.framealpha:1
+legend.edgecolor: dimgrey
+
+
+
+# FIGURE OUTPUT 
+figure.figsize  : 10, 4
+figure.dpi : 150
+savefig.dpi : 300
+
+
+

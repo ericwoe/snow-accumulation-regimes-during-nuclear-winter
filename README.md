@@ -65,14 +65,15 @@ snow model output (`results/<scenario>/snow_model_output_<scenario>.nc`,
 - `data/` — input data; see [`data/README.md`](data/README.md) for sources.
 - `results/` — figures, cluster labels and models; see
   [`results/README.md`](results/README.md).
+- `style/` — the [ALLFED matplotlib style sheet](https://github.com/allfed/ALLFED-matplotlib-style-sheet)
+  used for all figures, stored locally so they stay reproducible.
 
 ## Status
 
 This repository is set up from the
 [Scientific-Repository-Template](https://github.com/florianjehn/Scientific-Repository-Template).
 Maps use the Robinson projection rather than the template's Winkel Tripel
-convention, and plots use the ALLFED matplotlib style sheet rather than
-`style/scientific.mplstyle`.
+convention.
 
 ## Data sources
 
